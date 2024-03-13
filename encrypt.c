@@ -14,7 +14,6 @@ int main(int argc, char* argv[])
         char gpg_cmd[2000] = "";
         char gpg_output_name[500] = "";
 
-
         strncpy(rm_file_cmd, "rm -rf ", sizeof("rm -rf ") + 1);
         strncat(rm_file_cmd, filename, sizeof(filename) + 1);
         strncpy(compressed_name, filename, strlen(filename) + 1);

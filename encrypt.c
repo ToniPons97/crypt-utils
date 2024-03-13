@@ -2,13 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     const char *filename = NULL;
     filename = argv[1];
 
-    if ((argc == 2))
-    {
+    if (argc == 2) {
         char tar_compress_cmd[5000];
         char compressed_name[500];
         char rm_file_cmd[500];
@@ -55,9 +54,7 @@ int main(int argc, char *argv[])
             strncat(rm_file_cmd, ".tar.gz", strlen(".tar.gz") + 1);
             system(rm_file_cmd);
         }
-    }
-    else
-    {
+    } else {
         printf("[!] no file or directoy to encrypt.\n");
     }
 

@@ -38,11 +38,8 @@ int main(int argc, char *argv[])
 
         snprintf(gpg_cmd, 2000, "%s%s%s%s", "gpg --output ", gpg_output_name, " --symmetric --no-symkey-cache ", compressed_name);
 
-        printf("Executing: %s\n", gpg_cmd);
-
         status = system(gpg_cmd);
 
-        
         if (status == -1) {
             printf("Error executing command: %s\n", gpg_cmd);
             return 1;

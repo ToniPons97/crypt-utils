@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "dir_listing.h"
+#include "cryptography.h"
 
 int main(int argc, char* argv[]) {
     const char e_flag[] = "-e";
@@ -20,8 +21,7 @@ int main(int argc, char* argv[]) {
             return 1;
         }
 
-        // DO THE MAGIC HERE
-
+        encrypt(argv[2]);
     } else if (strncmp(d_flag, argv[1], strlen(argv[1])) == 0) {
         printf("Decrypt\n");
 
@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
             return 1;
         }
 
-        // DO THE MAGIC HERE
+        decrypt(argv[2]);
     } else {
         printf("[-] Invalid flag\nTry one of these: -e, -d.\n");
         return 1;

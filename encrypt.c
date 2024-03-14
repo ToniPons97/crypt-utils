@@ -32,7 +32,11 @@ int main(int argc, char* argv[])
         return 1;
     }
     
-    system(rm_file_cmd);
+    status = system(rm_file_cmd);
+    if (status == -1) {
+        printf("Error executing command: %s\n", rm_file_cmd);
+        return 1;
+    }
 
     snprintf(gpg_output_name, 600, "%s%s", compressed_name, encrypted_ext);
     snprintf(gpg_cmd, 2000, "%s%s%s%s", "gpg --output ", gpg_output_name, " --symmetric --no-symkey-cache ", compressed_name);

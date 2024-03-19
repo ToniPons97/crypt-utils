@@ -53,7 +53,6 @@ void encrypt(char* file_name) {
 
 void decrypt(char* file_name) {
     char filename_copy[600] = "";
-
     strncpy(filename_copy, file_name, strlen(file_name));
 
     char decrypted_name[500] = "";
@@ -98,6 +97,13 @@ void decrypt(char* file_name) {
     }
 
     snprintf(rm_cmd,  5000, "%s%s", "rm -rf ", decrypted_name);
+    status = system(rm_cmd);
+    if (status == -1) {
+        printf("Error running command %s\n", rm_cmd);
+        return;
+    }
+
+    snprintf(rm_cmd, 5000, "%s%s", "rm ", filename_copy);
     status = system(rm_cmd);
     if (status == -1) {
         printf("Error running command %s\n", rm_cmd);

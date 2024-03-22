@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "cryptography.h"
+#include <stdbool.h>
 
 void encrypt(char* file_name) {
     char tar_compress_cmd[5000] = "";
@@ -62,6 +63,10 @@ void decrypt(char* file_name) {
     char decrypt_cmd[2000] = "";
     char tar_decompress_cmd[500] = "";
     char rm_cmd[500] = "";
+    char buffer[1024];
+    char gpg_bad_key_error[] = "gpg: decryption failed: Bad session key";
+    bool decryption_success = true;
+    int status;
 
     token = strtok(file_name, delimiter);
     while (token != NULL)
@@ -79,34 +84,45 @@ void decrypt(char* file_name) {
     }
 
     strncat(decrypted_name, extensions, strlen(extensions));
-    snprintf(decrypt_cmd, 2000, "%s%s%s%s", "gpg --output ", decrypted_name, " --decrypt ", filename_copy);
-    
-    int status = system(decrypt_cmd);
-    if (status == -1) {
-        printf("Error running command %s\n", decrypt_cmd);
+    snprintf(decrypt_cmd, 2000, "%s %s %s %s %s", "gpg --output", decrypted_name, "--decrypt", filename_copy, "2>&1");
+
+    FILE* error_pipe = popen(decrypt_cmd, "r");
+    if (error_pipe == NULL) {
+        perror("Error opening pipe.");
         return;
+    } 
+
+    while (fgets(buffer, sizeof(buffer), error_pipe) != NULL) {
+        if (strncmp(buffer, gpg_bad_key_error, strlen(gpg_bad_key_error)) == 0)
+            decryption_success = false;
     }
 
-   printf("Decrypted name %s\nOriginal name: %s\n", decrypted_name, file_name);
-   snprintf(tar_decompress_cmd, 5000, "%s%s", "tar xzf ", decrypted_name);
+    pclose(error_pipe);
 
-    status = system(tar_decompress_cmd);
-    if (status == -1) {
-        printf("Error running command %s\n", tar_decompress_cmd);
-        return;
-    }
+    if (decryption_success) {
+        printf("Decrypted name %s\nOriginal name: %s\n", decrypted_name, file_name);
+        snprintf(tar_decompress_cmd, 5000, "%s%s", "tar xzf ", decrypted_name);
 
-    snprintf(rm_cmd,  5000, "%s%s", "rm -rf ", decrypted_name);
-    status = system(rm_cmd);
-    if (status == -1) {
-        printf("Error running command %s\n", rm_cmd);
-        return;
-    }
+        status = system(tar_decompress_cmd);
+        if (status == -1) {
+            printf("Error running command %s\n", tar_decompress_cmd);
+            return;
+        }
 
-    snprintf(rm_cmd, 5000, "%s%s", "rm ", filename_copy);
-    status = system(rm_cmd);
-    if (status == -1) {
-        printf("Error running command %s\n", rm_cmd);
-        return;
+        snprintf(rm_cmd,  5000, "%s%s", "rm -rf ", decrypted_name);
+        status = system(rm_cmd);
+        if (status == -1) {
+            printf("Error running command %s\n", rm_cmd);
+            return;
+        }
+
+        snprintf(rm_cmd, 5000, "%s%s", "rm ", filename_copy);
+        status = system(rm_cmd);
+        if (status == -1) {
+            printf("Error running command %s\n", rm_cmd);
+            return;
+        }
+    } else {
+        printf("Incorrect passphrase\n");
     }
 }

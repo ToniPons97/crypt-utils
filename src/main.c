@@ -9,7 +9,7 @@ int main(int argc, char* argv[]) {
     const char d_flag[] = "-d";
 
     if (argc != 3) {
-        printf("[!] Usage:\nEncryption: %s -e file_name\nDecryption: %s -d file_name\n", argv[0], argv[0]);
+        printf("[!] Usage:\nEncryption: %s -e example.txt\nDecryption: %s -d example.txt\n", argv[0], argv[0]);
         return 1;
     }
 

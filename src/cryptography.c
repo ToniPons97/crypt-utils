@@ -15,9 +15,9 @@ void encrypt(char* file_name) {
     char gpg_output_name[5000] = "";
     char option;
 
-    snprintf(rm_file_cmd, 500, "%s%s", "rm -rf ", file_name);
+    snprintf(rm_file_cmd, 500, "%s %s", "rm -rf", file_name);
     snprintf(compressed_name, 500, "%s%s", file_name, compressed_ext);
-    snprintf(tar_compress_cmd, 5000, "%s%s%s%s", "tar czf ", compressed_name, " ", file_name);
+    snprintf(tar_compress_cmd, 5000, "%s %s %s", "tar czf", compressed_name, file_name);
 
     int status = system(tar_compress_cmd);
     if (status == -1) {
@@ -32,7 +32,7 @@ void encrypt(char* file_name) {
     }
 
     snprintf(gpg_output_name, 600, "%s%s", compressed_name, encrypted_ext);
-    snprintf(gpg_cmd, 6000, "%s%s%s%s", "gpg --output ", gpg_output_name, " --symmetric --no-symkey-cache ", compressed_name);
+    snprintf(gpg_cmd, 6000, "%s %s %s %s", "gpg --output", gpg_output_name, "--symmetric --no-symkey-cache", compressed_name);
 
     status = system(gpg_cmd);
     if (status == -1) {

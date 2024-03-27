@@ -86,18 +86,18 @@ void decrypt(char* file_name) {
     strncat(decrypted_name, extensions, strlen(extensions));
     snprintf(decrypt_cmd, 2000, "%s %s %s %s %s", "gpg --output", decrypted_name, "--decrypt", filename_copy, "2>&1");
 
-    FILE* error_pipe = popen(decrypt_cmd, "r");
-    if (error_pipe == NULL) {
+    FILE* pipe = popen(decrypt_cmd, "r");
+    if (pipe == NULL) {
         perror("Error opening pipe.");
         return;
     } 
 
-    while (fgets(buffer, sizeof(buffer), error_pipe) != NULL) {
+    while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
         if (strncmp(buffer, gpg_bad_key_error, strlen(gpg_bad_key_error)) == 0)
             decryption_success = false;
     }
 
-    pclose(error_pipe);
+    pclose(pipe);
 
     if (decryption_success) {
         printf("Decrypted name %s\nOriginal name: %s\n", decrypted_name, file_name);

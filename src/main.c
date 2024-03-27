@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include "dir_listing.h"
+#include "file_utilities.h"
 #include "cryptography.h"
 
 int main(int argc, char* argv[]) {
@@ -27,6 +27,11 @@ int main(int argc, char* argv[]) {
 
         if(!file_exists(argv[2])) {
             printf("[-] File does not exist!\n");
+            return 1;
+        }
+
+        if (!is_gpg_file(argv[2])) {
+            printf("[!] The file does not appear to be encrypted with GPG using symmetric encryption.\n");
             return 1;
         }
 

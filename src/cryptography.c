@@ -15,9 +15,9 @@ void encrypt(char* file_name) {
     char gpg_output_name[5000] = "";
     char option;
 
-    snprintf(rm_file_cmd, 500, "%s %s", "rm -rf", file_name);
+    snprintf(rm_file_cmd, 500, "rm -rf %s", file_name);
     snprintf(compressed_name, 500, "%s%s", file_name, compressed_ext);
-    snprintf(tar_compress_cmd, 5000, "%s %s %s", "tar czf", compressed_name, file_name);
+    snprintf(tar_compress_cmd, 5000, "tar czf %s %s", compressed_name, file_name);
 
     int status = system(tar_compress_cmd);
     if (status == -1) {
@@ -32,7 +32,7 @@ void encrypt(char* file_name) {
     }
 
     snprintf(gpg_output_name, 600, "%s%s", compressed_name, encrypted_ext);
-    snprintf(gpg_cmd, 6000, "%s %s %s %s", "gpg --output", gpg_output_name, "--symmetric --no-symkey-cache", compressed_name);
+    snprintf(gpg_cmd, 6000, "gpg --output %s --symmetric --no-symkey-cache %s", gpg_output_name, compressed_name);
 
     status = system(gpg_cmd);
     if (status == -1) {
@@ -84,7 +84,7 @@ void decrypt(char* file_name) {
     }
 
     strncat(decrypted_name, extensions, strlen(extensions));
-    snprintf(decrypt_cmd, 2000, "%s %s %s %s %s", "gpg --output", decrypted_name, "--decrypt", filename_copy, "2>&1");
+    snprintf(decrypt_cmd, 2000, "gpg --output %s --decrypt %s 2>&1", decrypted_name, filename_copy);
 
     FILE* pipe = popen(decrypt_cmd, "r");
     if (pipe == NULL) {
@@ -101,7 +101,7 @@ void decrypt(char* file_name) {
 
     if (decryption_success) {
         printf("Decrypted name %s\nOriginal name: %s\n", decrypted_name, file_name);
-        snprintf(tar_decompress_cmd, 5000, "%s%s", "tar xzf ", decrypted_name);
+        snprintf(tar_decompress_cmd, 5000, "tar xzf %s", decrypted_name);
 
         status = system(tar_decompress_cmd);
         if (status == -1) {
@@ -109,14 +109,14 @@ void decrypt(char* file_name) {
             return;
         }
 
-        snprintf(rm_cmd,  5000, "%s%s", "rm -rf ", decrypted_name);
+        snprintf(rm_cmd,  5000, "rm -rf %s", decrypted_name);
         status = system(rm_cmd);
         if (status == -1) {
             printf("Error running command %s\n", rm_cmd);
             return;
         }
 
-        snprintf(rm_cmd, 5000, "%s%s", "rm ", filename_copy);
+        snprintf(rm_cmd, 5000, "rm %s", filename_copy);
         status = system(rm_cmd);
         if (status == -1) {
             printf("Error running command %s\n", rm_cmd);

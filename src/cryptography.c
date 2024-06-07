@@ -63,9 +63,6 @@ void decrypt(char* file_name) {
     char decrypt_cmd[2000] = "";
     char tar_decompress_cmd[500] = "";
     char rm_cmd[500] = "";
-    char buffer[1024];
-    char gpg_bad_key_error[] = "gpg: decryption failed: Bad session key";
-    bool decryption_success = true;
     int status;
 
     token = strtok(file_name, delimiter);
@@ -92,10 +89,7 @@ void decrypt(char* file_name) {
         return;
     } 
 
-    while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
-        if (strncmp(buffer, gpg_bad_key_error, strlen(gpg_bad_key_error)) == 0)
-            decryption_success = false;
-    }
+    bool decryption_success = check_decryption_status(pipe);
 
     pclose(pipe);
 
@@ -125,4 +119,21 @@ void decrypt(char* file_name) {
     } else {
         printf("Incorrect passphrase\n");
     }
+}
+
+bool check_decryption_status(FILE* pipe) {
+    char buffer[1024];
+    bool decryption_status = true;
+    char gpg_bad_key_error[] = "gpg: decryption failed: Bad session key";
+    char gpg_cancelled_by_user_error[] = "gpg: cancelled by user";
+
+    while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+        if (strncmp(buffer, gpg_bad_key_error, strlen(gpg_bad_key_error)) == 0) {
+            decryption_status = false;
+        } else if (strncmp(buffer, gpg_bad_key_error, strlen(gpg_cancelled_by_user_error)) == 0) {
+            decryption_status = false;
+        }
+    }
+
+    return decryption_status;
 }

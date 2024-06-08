@@ -130,13 +130,13 @@ void decrypt(char* file_name) {
 enum decryption_status check_decryption_status(FILE* pipe) {
     char buffer[1024];
     int decryption_status = SUCCESS;
-    char gpg_bad_key_error[] = "gpg: decryption failed: Bad session key";
-    char gpg_cancelled_by_user_error[] = "gpg: cancelled by user";
+    char bad_key_error[] = "gpg: decryption failed: Bad session key";
+    char cancelled_by_user_error[] = "gpg: cancelled by user";
 
     while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
-        if (strncmp(buffer, gpg_bad_key_error, strlen(gpg_bad_key_error)) == 0) {
+        if (strncmp(buffer, bad_key_error, strlen(bad_key_error)) == 0) {
             decryption_status = BAD_SESSION_KEY;
-        } else if (strncmp(buffer, gpg_bad_key_error, strlen(gpg_cancelled_by_user_error)) == 0) {
+        } else if (strncmp(buffer, cancelled_by_user_error, strlen(cancelled_by_user_error)) == 0) {
             decryption_status = CANCELLED_BY_USER;
         }
     }
@@ -145,11 +145,16 @@ enum decryption_status check_decryption_status(FILE* pipe) {
 }
 
 void decryption_status_message(int decryption_status) {
-    if (decryption_status == BAD_SESSION_KEY) {
+    printf("%d\n", decryption_status);
+    switch (decryption_status)
+    {
+    case BAD_SESSION_KEY:
         printf("Incorrect passphrase\n");
-    } else if (decryption_status == CANCELLED_BY_USER) {
-        printf("Oeration cancelled by user\n");
-    } else {
+        break;
+    case CANCELLED_BY_USER:
+        printf("Operation cancelled by user\n");
+    default:
         printf("Unknown error\n");
+        break;
     }
 }

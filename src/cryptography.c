@@ -65,6 +65,12 @@ void decrypt(char* file_name) {
     char rm_cmd[500] = "";
     int status;
 
+    enum decryption_status {
+        SUCCESS = 0,
+        BAD_SESSION_KEY = 1,
+        CANCELLED_BY_USER = 2
+    };
+
     token = strtok(file_name, delimiter);
     while (token != NULL)
     {
@@ -89,11 +95,11 @@ void decrypt(char* file_name) {
         return;
     } 
 
-    bool decryption_success = check_decryption_status(pipe);
+    int decryption_status = check_decryption_status(pipe);
 
     pclose(pipe);
 
-    if (decryption_success) {
+    if (decryption_status == 0) {
         printf("Decrypted name %s\nOriginal name: %s\n", decrypted_name, file_name);
         snprintf(tar_decompress_cmd, 5000, "tar xzf %s", decrypted_name);
 
@@ -117,23 +123,33 @@ void decrypt(char* file_name) {
             return;
         }
     } else {
-        printf("Incorrect passphrase\n");
+        decryption_status_message(decryption_status);
     }
 }
 
-bool check_decryption_status(FILE* pipe) {
+enum decryption_status check_decryption_status(FILE* pipe) {
     char buffer[1024];
-    bool decryption_status = true;
+    int decryption_status = SUCCESS;
     char gpg_bad_key_error[] = "gpg: decryption failed: Bad session key";
     char gpg_cancelled_by_user_error[] = "gpg: cancelled by user";
 
     while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
         if (strncmp(buffer, gpg_bad_key_error, strlen(gpg_bad_key_error)) == 0) {
-            decryption_status = false;
+            decryption_status = BAD_SESSION_KEY;
         } else if (strncmp(buffer, gpg_bad_key_error, strlen(gpg_cancelled_by_user_error)) == 0) {
-            decryption_status = false;
+            decryption_status = CANCELLED_BY_USER;
         }
     }
 
     return decryption_status;
+}
+
+void decryption_status_message(int decryption_status) {
+    if (decryption_status == BAD_SESSION_KEY) {
+        printf("Incorrect passphrase\n");
+    } else if (decryption_status == CANCELLED_BY_USER) {
+        printf("Oeration cancelled by user\n");
+    } else {
+        printf("Unknown error\n");
+    }
 }

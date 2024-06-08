@@ -26,7 +26,10 @@ bool file_exists(char* file_name) {
 bool is_gpg_file(char* file_name) {
     char file_check_cmd[500];
     char buffer[1024];
-    char expected_cmd_out[] = "GPG symmetrically encrypted data (AES256 cipher)";
+    char* expected_cmd_out[] = {
+        "GPG symmetrically encrypted data (AES256 cipher)",
+        "PGP symmetric key encrypted data"
+    };
 
     snprintf(file_check_cmd, sizeof(file_check_cmd), "file %s 2>&1", file_name);
 
@@ -37,9 +40,11 @@ bool is_gpg_file(char* file_name) {
     } 
 
     while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
-        if (strstr(buffer, expected_cmd_out) != NULL) {
-            pclose(pipe);
-            return true;
+        for (int i = 0; i < 2; i++) {
+            if (strstr(buffer, expected_cmd_out[i]) != NULL) {
+                pclose(pipe);
+                return true;
+            }
         }
     }
 

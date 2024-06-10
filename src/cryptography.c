@@ -145,7 +145,6 @@ enum decryption_status check_decryption_status(FILE* pipe) {
 }
 
 void decryption_status_message(int decryption_status) {
-    printf("%d\n", decryption_status);
     switch (decryption_status)
     {
     case BAD_SESSION_KEY:
@@ -153,6 +152,7 @@ void decryption_status_message(int decryption_status) {
         break;
     case CANCELLED_BY_USER:
         printf("Operation cancelled by user\n");
+        break;
     default:
         printf("Unknown error\n");
         break;

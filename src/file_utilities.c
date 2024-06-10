@@ -31,6 +31,8 @@ bool is_gpg_file(char* file_name) {
         "PGP symmetric key encrypted data"
     };
 
+    size_t num_elements = sizeof(expected_cmd_out) / sizeof(expected_cmd_out[0]);
+
     snprintf(file_check_cmd, sizeof(file_check_cmd), "file %s 2>&1", file_name);
 
     FILE* pipe = popen(file_check_cmd, "r");
@@ -40,7 +42,7 @@ bool is_gpg_file(char* file_name) {
     } 
 
     while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < num_elements; i++) {
             if (strstr(buffer, expected_cmd_out[i]) != NULL) {
                 pclose(pipe);
                 return true;

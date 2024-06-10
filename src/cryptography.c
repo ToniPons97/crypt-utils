@@ -24,31 +24,38 @@ void encrypt(char* file_name) {
         printf("Error executing command: %s\n", tar_compress_cmd);
         return;
     }
-    
-    status = system(rm_file_cmd);
-    if (status == -1) {
-        printf("Error executing command: %s\n", rm_file_cmd);
-        return;
-    }
 
     snprintf(gpg_output_name, 600, "%s%s", compressed_name, encrypted_ext);
-    snprintf(gpg_cmd, 6000, "gpg --output %s --symmetric --no-symkey-cache %s", gpg_output_name, compressed_name);
+    snprintf(gpg_cmd, 6000, "gpg --output %s --symmetric --no-symkey-cache %s 2>&1", gpg_output_name, compressed_name);
 
-    status = system(gpg_cmd);
-    if (status == -1) {
-        printf("Error executing command: %s\n", gpg_cmd);
+    FILE* pipe = popen(gpg_cmd, "r");
+    if (pipe == NULL) {
+        perror("Error opening pipe.");
         return;
     }
 
-    printf("Do you wish to delete the unencrypted data? (y/n) ");
-    scanf("%c", &option);
+    int encryption_status = check_status(pipe);
 
-    if (option == 'y') {
+    pclose(pipe);
+
+    printf("%d\n", encryption_status);
+
+    if (encryption_status == 0) {
+        printf("Do you wish to delete the unencrypted data? (y/n) ");
+        scanf("%c", &option);
+
+        if (option == 'y') {
+            system(rm_file_cmd);
+            strncat(rm_file_cmd, compressed_ext, strlen(compressed_ext));
+            system(rm_file_cmd);
+        } else if (option == 'n') {
+            strncat(decompress_cmd, compressed_name, strlen(compressed_name));
+            system(decompress_cmd);
+        }
+    } else {
         strncat(rm_file_cmd, compressed_ext, strlen(compressed_ext));
         system(rm_file_cmd);
-    } else if (option == 'n') {
-        strncat(decompress_cmd, compressed_name, strlen(compressed_name));
-        system(decompress_cmd);
+        status_message(encryption_status);
     }
 }
 
@@ -64,12 +71,6 @@ void decrypt(char* file_name) {
     char tar_decompress_cmd[500] = "";
     char rm_cmd[500] = "";
     int status;
-
-    enum decryption_status {
-        SUCCESS = 0,
-        BAD_SESSION_KEY = 1,
-        CANCELLED_BY_USER = 2
-    };
 
     token = strtok(file_name, delimiter);
     while (token != NULL)
@@ -95,7 +96,7 @@ void decrypt(char* file_name) {
         return;
     } 
 
-    int decryption_status = check_decryption_status(pipe);
+    int decryption_status = check_status(pipe);
 
     pclose(pipe);
 
@@ -123,29 +124,31 @@ void decrypt(char* file_name) {
             return;
         }
     } else {
-        decryption_status_message(decryption_status);
+        status_message(decryption_status);
     }
 }
 
-enum decryption_status check_decryption_status(FILE* pipe) {
+enum status check_status(FILE* pipe) {
     char buffer[1024];
-    int decryption_status = SUCCESS;
+    int status = SUCCESS;
     char bad_key_error[] = "gpg: decryption failed: Bad session key";
     char cancelled_by_user_error[] = "gpg: cancelled by user";
 
-    while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+    while (fgets(buffer, sizeof(buffer), pipe) != NULL) {        
         if (strncmp(buffer, bad_key_error, strlen(bad_key_error)) == 0) {
-            decryption_status = BAD_SESSION_KEY;
-        } else if (strncmp(buffer, cancelled_by_user_error, strlen(cancelled_by_user_error)) == 0) {
-            decryption_status = CANCELLED_BY_USER;
+            status = BAD_SESSION_KEY;
+        }
+        
+        if (strncmp(buffer, cancelled_by_user_error, strlen(cancelled_by_user_error)) == 0) {
+            status = CANCELLED_BY_USER;
         }
     }
 
-    return decryption_status;
+    return status;
 }
 
-void decryption_status_message(int decryption_status) {
-    switch (decryption_status)
+void status_message(int status) {
+    switch (status)
     {
     case BAD_SESSION_KEY:
         printf("Incorrect passphrase\n");

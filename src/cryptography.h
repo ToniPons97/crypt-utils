@@ -3,7 +3,7 @@
 #ifndef CRYPTOGRAPHY_H
 #define CRYPTOGRAPHY_H
 
-enum decryption_status {
+enum status {
     SUCCESS = 0,
     BAD_SESSION_KEY = 1,
     CANCELLED_BY_USER = 2
@@ -11,7 +11,7 @@ enum decryption_status {
 
 void encrypt(char* file_name);
 void decrypt(char* file_name);
-enum decryption_status check_decryption_status(FILE* pipe);
-void decryption_status_message(int decryption_status);
+enum status check_status(FILE* pipe);
+void status_message(int status);
 
 #endif

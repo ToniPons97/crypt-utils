@@ -38,8 +38,6 @@ void encrypt(char* file_name) {
 
     pclose(pipe);
 
-    printf("%d\n", encryption_status);
-
     if (encryption_status == 0) {
         printf("Do you wish to delete the unencrypted data? (y/n) ");
         scanf("%c", &option);

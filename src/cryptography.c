@@ -69,6 +69,7 @@ void decrypt(char* file_name) {
     char tar_decompress_cmd[500] = "";
     char rm_cmd[500] = "";
     int status;
+    char option;
 
     token = strtok(file_name, delimiter);
     while (token != NULL)
@@ -108,18 +109,25 @@ void decrypt(char* file_name) {
             return;
         }
 
-        snprintf(rm_cmd,  5000, "rm -rf %s", decrypted_name);
+        snprintf(rm_cmd,  5000, "rm -rf %s", decrypted_name);        
         status = system(rm_cmd);
         if (status == -1) {
             printf("Error running command %s\n", rm_cmd);
             return;
         }
 
-        snprintf(rm_cmd, 5000, "rm %s", filename_copy);
-        status = system(rm_cmd);
-        if (status == -1) {
-            printf("Error running command %s\n", rm_cmd);
-            return;
+        printf("Do you wish to delete encrypted file? (y / n): ");
+        scanf("%c", &option);
+
+        if (option == 'y') {
+            snprintf(rm_cmd, 5000, "rm %s", filename_copy);
+            status = system(rm_cmd);
+            if (status == -1) {
+                printf("Error running command %s\n", rm_cmd);
+                return;
+            }
+        } else {
+            printf("Keeping encrypted file.\n");
         }
     } else {
         status_message(decryption_status);

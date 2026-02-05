@@ -5,28 +5,68 @@
 #include <stdbool.h>
 
 void encrypt(char* file_name) {
-    char tar_compress_cmd[5000] = "";
-    char compressed_name[500] = "";
-    char rm_file_cmd[500] = "";
-    char decompress_cmd[] = "tar xzf ";
-    char compressed_ext[] = ".tar.gz";
-    char encrypted_ext[] = ".gpg";
-    char gpg_cmd[6000] = "";
-    char gpg_output_name[5000] = "";
+    char* dy_tar_compress_cmd = NULL;
+    char* compressed_name = NULL;
+    char* rm_file_cmd = NULL;
+    char* decompress_cmd = "tar xzf ";
+    char* compressed_ext = ".tar.gz";
+    char* encrypted_ext = ".gpg";
+    char* gpg_cmd = NULL;
+    char* gpg_output_name = NULL;
     char option;
-
-    snprintf(rm_file_cmd, 500, "rm -rf %s", file_name);
-    snprintf(compressed_name, 500, "%s%s", file_name, compressed_ext);
-    snprintf(tar_compress_cmd, 5000, "tar czf %s %s", compressed_name, file_name);
-
-    int status = system(tar_compress_cmd);
-    if (status == -1) {
-        printf("Error executing command: %s\n", tar_compress_cmd);
+    
+    size_t dy_rm_file_cmd_len = strlen("rm -rf ") + strlen(file_name) + 1;
+    rm_file_cmd = (char*)malloc(dy_rm_file_cmd_len);
+    if (rm_file_cmd == NULL) {
+        printf("Error allocating memory for rm_file_cmd\n");
         return;
     }
 
-    snprintf(gpg_output_name, 600, "%s%s", compressed_name, encrypted_ext);
-    snprintf(gpg_cmd, 6000, "gpg --output %s --symmetric --no-symkey-cache %s 2>&1", gpg_output_name, compressed_name);
+    snprintf(rm_file_cmd, dy_rm_file_cmd_len, "rm -rf %s", file_name);
+
+    size_t dy_compressed_name_len = strlen(file_name) + strlen(compressed_ext) + 1;
+    compressed_name = (char*)malloc(dy_compressed_name_len);
+    if (compressed_name == NULL) {
+        printf("Error allocating memory for compressed_name\n");
+        return;
+    }
+
+    snprintf(compressed_name, dy_compressed_name_len, "%s%s", file_name, compressed_ext);
+
+    size_t dy_tar_compress_cmd_len = strlen("tar czf ") + strlen(compressed_name) + strlen(file_name) + 2;
+    dy_tar_compress_cmd = (char*)malloc(dy_tar_compress_cmd_len);
+    if (dy_tar_compress_cmd == NULL) {
+        printf("Error allocating memory for dy_tar_compress_cmd\n");
+        return;
+    }
+
+    snprintf(dy_tar_compress_cmd, dy_tar_compress_cmd_len, "tar czf %s %s", compressed_name, file_name);
+
+    int status = system(dy_tar_compress_cmd);
+    if (status == -1) {
+        printf("Error executing command: %s\n", dy_tar_compress_cmd);
+        return;
+    }
+
+    size_t dy_gpg_output_name_len = strlen(compressed_name) + strlen(encrypted_ext) + 1;
+    gpg_output_name = (char*)malloc(dy_gpg_output_name_len);
+    if (gpg_output_name == NULL) {
+        printf("Error allocating memory for gpg_output_name\n");
+        return;
+    }
+
+    snprintf(gpg_output_name, dy_gpg_output_name_len, "%s%s", compressed_name, encrypted_ext);
+
+
+    size_t dy_gpg_cmd_len = strlen("gpg --output --symmetric --no-symkey-cache 2>&1") + strlen(gpg_output_name) + strlen(compressed_name) + 5;
+    gpg_cmd = (char*)malloc(dy_gpg_cmd_len);
+    if (gpg_cmd == NULL) {
+        printf("Error allocating memory for gpg_cmd\n");
+        return;
+    }
+
+    snprintf(gpg_cmd, dy_gpg_cmd_len, "gpg --output %s --symmetric --no-symkey-cache %s 2>&1", gpg_output_name, compressed_name);
+    printf("gpg_cmd: %ld\n", strlen(gpg_cmd));
 
     FILE* pipe = popen(gpg_cmd, "r");
     if (pipe == NULL) {
@@ -47,13 +87,37 @@ void encrypt(char* file_name) {
             strncat(rm_file_cmd, compressed_ext, strlen(compressed_ext));
             system(rm_file_cmd);
         } else if (option == 'n') {
-            strncat(decompress_cmd, compressed_name, strlen(compressed_name));
+            strncat(decompress_cmd, compressed_name, strlen(compressed_name) + 1);
+            
+            printf("decompress: %s- %ld\n", compressed_name, strlen(compressed_name));
+            
             system(decompress_cmd);
+
         }
     } else {
         strncat(rm_file_cmd, compressed_ext, strlen(compressed_ext));
         system(rm_file_cmd);
         status_message(encryption_status);
+    }
+
+    if (dy_tar_compress_cmd) {
+        free(dy_tar_compress_cmd);
+    }
+
+    if (compressed_name) {
+        free(compressed_name);
+    }
+
+    if (gpg_output_name) {
+        free(gpg_output_name);
+    }
+
+    if (rm_file_cmd) {
+        free(rm_file_cmd);
+    }
+
+    if (gpg_cmd) {
+        free(gpg_cmd);
     }
 }
 

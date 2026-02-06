@@ -19,7 +19,7 @@ void encrypt(char* file_name) {
     rm_file_cmd = (char*)malloc(dy_rm_file_cmd_len);
     if (rm_file_cmd == NULL) {
         printf("Error allocating memory for rm_file_cmd\n");
-        return;
+        goto out;
     }
 
     snprintf(rm_file_cmd, dy_rm_file_cmd_len, "rm -rf %s", file_name);
@@ -28,7 +28,7 @@ void encrypt(char* file_name) {
     compressed_name = (char*)malloc(dy_compressed_name_len);
     if (compressed_name == NULL) {
         printf("Error allocating memory for compressed_name\n");
-        return;
+        goto out;
     }
 
     snprintf(compressed_name, dy_compressed_name_len, "%s%s", file_name, compressed_ext);
@@ -37,7 +37,7 @@ void encrypt(char* file_name) {
     dy_tar_compress_cmd = (char*)malloc(dy_tar_compress_cmd_len);
     if (dy_tar_compress_cmd == NULL) {
         printf("Error allocating memory for dy_tar_compress_cmd\n");
-        return;
+        goto out;
     }
 
     snprintf(dy_tar_compress_cmd, dy_tar_compress_cmd_len, "tar czf %s %s", compressed_name, file_name);
@@ -45,14 +45,14 @@ void encrypt(char* file_name) {
     int status = system(dy_tar_compress_cmd);
     if (status == -1) {
         printf("Error executing command: %s\n", dy_tar_compress_cmd);
-        return;
+        goto out;
     }
 
     size_t dy_gpg_output_name_len = strlen(compressed_name) + strlen(encrypted_ext) + 1;
     gpg_output_name = (char*)malloc(dy_gpg_output_name_len);
     if (gpg_output_name == NULL) {
         printf("Error allocating memory for gpg_output_name\n");
-        return;
+        goto out;
     }
 
     snprintf(gpg_output_name, dy_gpg_output_name_len, "%s%s", compressed_name, encrypted_ext);
@@ -62,16 +62,15 @@ void encrypt(char* file_name) {
     gpg_cmd = (char*)malloc(dy_gpg_cmd_len);
     if (gpg_cmd == NULL) {
         printf("Error allocating memory for gpg_cmd\n");
-        return;
+        goto out;
     }
 
     snprintf(gpg_cmd, dy_gpg_cmd_len, "gpg --output %s --symmetric --no-symkey-cache %s 2>&1", gpg_output_name, compressed_name);
-    printf("gpg_cmd: %ld\n", strlen(gpg_cmd));
 
     FILE* pipe = popen(gpg_cmd, "r");
     if (pipe == NULL) {
         perror("Error opening pipe.");
-        return;
+        goto out;
     }
 
     int encryption_status = check_status(pipe);
@@ -87,12 +86,18 @@ void encrypt(char* file_name) {
             strncat(rm_file_cmd, compressed_ext, strlen(compressed_ext));
             system(rm_file_cmd);
         } else if (option == 'n') {
-            strncat(decompress_cmd, compressed_name, strlen(compressed_name) + 1);
-            
-            printf("decompress: %s- %ld\n", compressed_name, strlen(compressed_name));
-            
-            system(decompress_cmd);
+            size_t decompress_cmd_len = strlen(decompress_cmd) + strlen(compressed_name) + 2;
+            char* dy_decompress_cmd = (char*)malloc(decompress_cmd_len);
+            if (!dy_decompress_cmd) {
+                perror("No mem");
+                goto out;
+            }
 
+            snprintf(dy_decompress_cmd, decompress_cmd_len, "%s %s", decompress_cmd, compressed_name);
+            system(dy_decompress_cmd);
+
+            if (dy_decompress_cmd)
+                free(dy_decompress_cmd);
         }
     } else {
         strncat(rm_file_cmd, compressed_ext, strlen(compressed_ext));
@@ -100,25 +105,21 @@ void encrypt(char* file_name) {
         status_message(encryption_status);
     }
 
-    if (dy_tar_compress_cmd) {
+out:
+    if (dy_tar_compress_cmd)
         free(dy_tar_compress_cmd);
-    }
 
-    if (compressed_name) {
+    if (compressed_name)
         free(compressed_name);
-    }
 
-    if (gpg_output_name) {
+    if (gpg_output_name)
         free(gpg_output_name);
-    }
 
-    if (rm_file_cmd) {
+    if (rm_file_cmd)
         free(rm_file_cmd);
-    }
 
-    if (gpg_cmd) {
+    if (gpg_cmd)
         free(gpg_cmd);
-    }
 }
 
 void decrypt(char* file_name) {

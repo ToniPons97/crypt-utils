@@ -4,7 +4,8 @@
 #include "cryptography.h"
 #include <stdbool.h>
 
-void encrypt(char* file_name) {
+void encrypt(char* file_name) 
+{
     char* dy_tar_compress_cmd = NULL;
     char* compressed_name = NULL;
     char* rm_file_cmd = NULL;
@@ -122,37 +123,62 @@ out:
         free(gpg_cmd);
 }
 
-void decrypt(char* file_name) {
-    char filename_copy[600] = "";
-    strncpy(filename_copy, file_name, strlen(file_name));
+void decrypt(char* file_name) 
+{
+    size_t file_name_len = strlen(file_name) + 1;
+    size_t decrypted_name_len = file_name_len - strlen(".gpg");
+    size_t tar_decompress_cmd_len = strlen("tar xzf ") + decrypted_name_len + 1;
 
-    char decrypted_name[500] = "";
-    char delimiter[] = ".";
+    char* delimiter = ".";
     char* token = NULL;
-    char extensions[30] = "";
-    char decrypt_cmd[2000] = "";
-    char tar_decompress_cmd[500] = "";
-    char rm_cmd[500] = "";
+    char* decrypt_cmd = NULL;
+    char* tar_decompress_cmd = NULL;
+    char* rm_cmd = NULL;
     int status;
     char option;
+    char* filename_copy = NULL;
+    char* decrypted_name = NULL;
 
+    filename_copy = (char*)calloc(1, file_name_len);
+    if (!filename_copy) {
+        perror("No mem");
+        goto out;
+    }
+
+    strncpy(filename_copy, file_name, file_name_len);
+
+    decrypted_name = (char*)calloc(1, decrypted_name_len);
+    if (!decrypted_name) {
+        perror("No mem");
+        goto out;
+    }
+    
     token = strtok(file_name, delimiter);
-    while (token != NULL)
-    {
-        if (strncmp(token, "gpg", 3) == 0) {
-            break;
-        }
-
-        if (strncmp(decrypted_name, "", 1) > 0) {
-            strncat(decrypted_name, delimiter, strlen(delimiter));
-        }
-
+    while (token != NULL) {
+        if (strncmp(token, "gpg", 3) == 0)
+        break;
+        
+        if (strncmp(decrypted_name, "", 1) > 0) 
+        strncat(decrypted_name, delimiter, strlen(delimiter));
+        
         strncat(decrypted_name, token, strlen(token));
         token = strtok(NULL, delimiter);
     }
-
-    strncat(decrypted_name, extensions, strlen(extensions));
-    snprintf(decrypt_cmd, 2000, "gpg --output %s --decrypt %s 2>&1", decrypted_name, filename_copy);
+    
+    size_t decrypt_cmd_len = strlen("gpg --output --decrypt 2>&1") + decrypted_name_len + strlen(filename_copy) + 3;
+    decrypt_cmd = (char*)calloc(1, decrypt_cmd_len);
+    if (!decrypt_cmd) {
+        perror("No mem");
+        goto out;
+    }
+    
+    snprintf(decrypt_cmd, decrypt_cmd_len, "gpg --output %s --decrypt %s 2>&1", decrypted_name, filename_copy);
+    
+    tar_decompress_cmd = (char*)calloc(1, tar_decompress_cmd_len);
+    if (!tar_decompress_cmd) {
+        perror("No mem");
+        goto out;
+    }
 
     FILE* pipe = popen(decrypt_cmd, "r");
     if (pipe == NULL) {
@@ -161,35 +187,46 @@ void decrypt(char* file_name) {
     } 
 
     int decryption_status = check_status(pipe);
-
     pclose(pipe);
 
     if (decryption_status == 0) {
-        printf("Decrypted name %s\nOriginal name: %s\n", decrypted_name, file_name);
-        snprintf(tar_decompress_cmd, 5000, "tar xzf %s", decrypted_name);
+        snprintf(tar_decompress_cmd, tar_decompress_cmd_len, "tar xzf %s", decrypted_name);
+
 
         status = system(tar_decompress_cmd);
         if (status == -1) {
-            printf("Error running command %s\n", tar_decompress_cmd);
-            return;
+            perror("Error running command");
+            goto out;
         }
 
-        snprintf(rm_cmd,  5000, "rm -rf %s", decrypted_name);        
+        size_t rm_cmd_len = strlen("rm -rf") + decrypted_name_len + 3;
+
+        rm_cmd = (char*)calloc(1, rm_cmd_len);
+        if (!rm_cmd) {
+            perror("No mem");
+            goto out;
+        }
+
+        snprintf(rm_cmd,  rm_cmd_len, "rm -rf %s", decrypted_name);     
         status = system(rm_cmd);
         if (status == -1) {
-            printf("Error running command %s\n", rm_cmd);
-            return;
+            perror("Error running command");
+            goto out;
         }
 
         printf("Do you wish to delete encrypted file? (y / n): ");
         scanf("%c", &option);
 
         if (option == 'y') {
-            snprintf(rm_cmd, 5000, "rm %s", filename_copy);
+            rm_cmd_len = strlen("rm") + file_name_len + 3;
+            snprintf(rm_cmd, rm_cmd_len, "rm %s", filename_copy);
+
+            printf("rm_cmd: %s\n", rm_cmd);
+
             status = system(rm_cmd);
             if (status == -1) {
                 printf("Error running command %s\n", rm_cmd);
-                return;
+                goto out;
             }
         } else {
             printf("Keeping encrypted file.\n");
@@ -197,6 +234,22 @@ void decrypt(char* file_name) {
     } else {
         status_message(decryption_status);
     }
+
+out:
+    if (filename_copy)
+        free(filename_copy);
+
+    if (decrypted_name)
+        free(decrypted_name);
+
+    if (decrypt_cmd)
+        free(decrypt_cmd);
+
+    if (tar_decompress_cmd)
+        free(tar_decompress_cmd);
+    
+    if (rm_cmd)
+        free(rm_cmd);
 }
 
 enum status check_status(FILE* pipe) {
